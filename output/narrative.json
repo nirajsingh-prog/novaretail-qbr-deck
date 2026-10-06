@@ -1,0 +1,64 @@
+{
+  "subtitle": "Q2 2026 Quarterly Business Review  |  Executive Readout",
+  "kpis": [
+    [
+      "$1.28B",
+      "Total Revenue, Q2 2026"
+    ],
+    [
+      "+12.3%",
+      "Revenue Growth vs Q3 2025"
+    ],
+    [
+      "53",
+      "Blended NPS (revenue-weighted)"
+    ]
+  ],
+  "summary": "NovaRetail closed Q2 2026 at $1.28B in revenue, up 12.3% versus Q3 2025 and 4.5% quarter-on-quarter. APAC is the standout, growing revenue 27% while holding the highest NPS (62). Latin America is moving the other way: revenue is down 7%, NPS has fallen to 29 and stockouts have reached 12.5%. The biggest risk this quarter is fulfilment: APAC warehouses are running at 92% capacity just as demand there accelerates.",
+  "slide_2": {
+    "headline": "APAC Leads Growth (+27%) While Latin America Contracts (−7%)",
+    "bullets": [
+      "APAC grew revenue from $260M to $330M (+27%), the fastest of any region, on +23% units.",
+      "North America remains the largest market at $465M, 36% of group revenue, growing a steady 11%.",
+      "Latin America is the only declining region (−7%); units fell 9% and returns rose to 8.2%, roughly double other regions.",
+      "Q4 2025 marketing spend jumped 39% to $132M for only a 12% revenue lift; spend has since reset to $96M."
+    ]
+  },
+  "slide_3": {
+    "headline": "APAC Sets the Customer Benchmark as Latin America NPS Falls 9 Points",
+    "bullets": [
+      "APAC leads on every CX measure: NPS 62, CSAT 92% and 2.2-day average delivery.",
+      "Europe is the most improved region, with NPS up 5 points as delivery fell to 3.2 days.",
+      "Latin America is deteriorating: NPS 38 → 29, CSAT 80% → 74%.",
+      "Slower delivery (5.5 → 7.5 days) is driving a 55% rise in Latin America support tickets."
+    ]
+  },
+  "slide_4": {
+    "headline": "Supply-Chain Strain Is Building in Latin America and APAC",
+    "bullets": [
+      "Latin America stockouts climbed to 12.5% (+3.5 pts since Q3 2025), the highest in the group.",
+      "APAC warehouses are at 92% capacity with stockouts at 8.5%, leaving no headroom for continued growth.",
+      "Latin America fraud incidents rose 67% to 30 per quarter, the highest of any region.",
+      "Return processing in Latin America now takes 10 days vs 5 or fewer elsewhere, compounding the CX decline."
+    ]
+  },
+  "actions": [
+    [
+      "Expand",
+      "APAC fulfilment capacity before peak season, targeting utilisation below 85% (now 92%) to protect +27% growth."
+    ],
+    [
+      "Launch",
+      "a Latin America recovery plan to cut delivery from 7.5 to under 5 days and returns processing from 10 days."
+    ],
+    [
+      "Tighten",
+      "fraud controls in Latin America, where incidents are up 67% to 30 per quarter."
+    ],
+    [
+      "Pre-position",
+      "inventory ahead of Q4: last Q4 average stockouts rose 1.2 pts as warehouses peaked."
+    ]
+  ],
+  "closing": "Protect the growth engine in APAC, fix the fundamentals in Latin America, and review progress at the Q3 2026 QBR."
+}
