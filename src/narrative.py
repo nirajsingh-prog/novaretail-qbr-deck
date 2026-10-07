@@ -1,18 +1,17 @@
 """Narrative layer: turns computed metrics into slide copy.
 
-Two engines produce the SAME JSON structure:
-  * rule-based (default, deterministic, fully data-driven - no hard-coded regions or numbers)
-  * Gemini (optional, --llm gemini) - gets the metrics as JSON, output is validated and
-    falls back to rule-based text for any field that fails validation.
-KPI values are ALWAYS computed in Python, never by the LLM.
+* rule_based()    - deterministic first draft; every region name and number is derived from the data.
+* to_json()/from_json() - the editable intermediate artifact (narrative.json) that sits between
+                    analysis and deck assembly. Users (or the ADK agent) edit THIS, then the deck is built from it.
+* KPI values are ALWAYS recomputed in Python and locked - neither users nor the AI can change them.
 """
 from __future__ import annotations
 
-import json
-import os
 import re
 
-from .analysis import Metrics, metrics_for_llm, quarter_label
+from .analysis import Metrics, quarter_label
+
+SCHEMA_VERSION = "2.0"
 
 # --------------------------------------------------------------------------- icon selection
 ICON_KEYWORDS = {
@@ -37,11 +36,11 @@ SLIDE_THEMES = {
 def choose_icon(theme: str, available: list[str]) -> str:
     """Score every icon by keyword overlap with the slide theme; best score wins."""
     words = set(re.findall(r"[a-z\-]+", theme.lower()))
+
     def score(stem: str) -> int:
         kw = ICON_KEYWORDS.get(stem, set(stem.split("_")))
         return len(words & kw)
-    stems = sorted(available, key=lambda s: (-score(s), s))
-    return stems[0]
+    return sorted(available, key=lambda s: (-score(s), s))[0]
 
 
 # --------------------------------------------------------------------------- helpers
@@ -51,6 +50,16 @@ def money(m: float) -> str:
 
 def signed(v: float, unit: str = "%", dp: int = 0) -> str:
     return f"{v:+.{dp}f}{unit}".replace("-", "−")
+
+
+def kpi_values(m: Metrics) -> list[tuple[str, str]]:
+    """Locked KPI values + default labels. Always computed from data."""
+    k = m.kpis
+    return [
+        (money(k["total_revenue_m"]), f"Total Revenue, {quarter_label(m.latest_q)}"),
+        (signed(k["revenue_growth_pct"], "%", 1), f"Revenue Growth vs {quarter_label(m.first_q)}"),
+        (f"{k['blended_nps']:.0f}", "Blended NPS (revenue-weighted)"),
+    ]
 
 
 # --------------------------------------------------------------------------- rule-based engine
@@ -71,11 +80,10 @@ def rule_based(m: Metrics) -> dict:
     fraud_g = (fraud.loc[L, hr] - fraud.loc[F, hr]) / fraud.loc[F, hr] * 100
     tick_g = (tick.loc[L, worst_nps] - tick.loc[F, worst_nps]) / tick.loc[F, worst_nps] * 100
 
-    # season peak: quarter with highest avg warehouse utilisation (excluding latest)
     hist = whu.drop(index=L).mean(axis=1)
     peak_q = hist.idxmax()
-    peak_stock_jump = stock.loc[peak_q].mean() - stock.loc[m.quarters[m.quarters.index(peak_q) - 1]].mean() \
-        if m.quarters.index(peak_q) > 0 else 0
+    pi = m.quarters.index(peak_q)
+    peak_stock_jump = stock.loc[peak_q].mean() - stock.loc[m.quarters[pi - 1]].mean() if pi > 0 else 0
 
     mt, rt = mkt.sum(axis=1), rev.sum(axis=1)
     mq = mt.idxmax()
@@ -86,13 +94,9 @@ def rule_based(m: Metrics) -> dict:
     yr, q = L.split("-Q")
     nxt = f"Q{int(q) % 4 + 1} {int(yr) + (1 if q == '4' else 0)}"
 
-    out = {
+    return {
         "subtitle": f"{Ll} Quarterly Business Review  |  Executive Readout",
-        "kpis": [
-            (money(k["total_revenue_m"]), f"Total Revenue, {Ll}"),
-            (signed(k["revenue_growth_pct"], "%", 1), f"Revenue Growth vs {Fl}"),
-            (f"{k['blended_nps']:.0f}", "Blended NPS (revenue-weighted)"),
-        ],
+        "kpis": kpi_values(m),
         "summary": (
             f"NovaRetail closed {Ll} at {money(k['total_revenue_m'])} in revenue, up "
             f"{k['revenue_growth_pct']:.1f}% versus {Fl} and {k['revenue_qoq_pct']:.1f}% quarter-on-quarter. "
@@ -109,7 +113,8 @@ def rule_based(m: Metrics) -> dict:
                 f"the fastest of any region, on {signed((units.loc[L, top] / units.loc[F, top] - 1) * 100)} units.",
                 f"{big} remains the largest market at {money(rev.loc[L, big])}, {share_big:.0f}% of group revenue, "
                 f"growing a steady {g[big]:.0f}%.",
-                f"{bot} is the only declining region ({signed(g[bot])}); units fell {abs((units.loc[L, bot] / units.loc[F, bot] - 1) * 100):.0f}% "
+                f"{bot} is the only declining region ({signed(g[bot])}); units fell "
+                f"{abs((units.loc[L, bot] / units.loc[F, bot] - 1) * 100):.0f}% "
                 f"and returns rose to {ret.loc[L, bot]:.1f}%, roughly double other regions.",
                 f"{quarter_label(mq)} marketing spend jumped {mkt_jump:.0f}% to {money(mt[mq])} for only a "
                 f"{rev_jump:.0f}% revenue lift; spend has since reset to {money(mt[L])}.",
@@ -150,57 +155,52 @@ def rule_based(m: Metrics) -> dict:
                        f"and returns processing from {rproc.loc[L, bot]:.0f} days."),
             ("Tighten", f"fraud controls in {hr}, where incidents are up {fraud_g:.0f}% to "
                         f"{fraud.loc[L, hr]:.0f} per quarter."),
-            ("Pre-position", f"inventory ahead of {quarter_label(peak_q)[:2]}: last {quarter_label(peak_q)[:2]} average stockouts "
-                             f"rose {peak_stock_jump:.1f} pts as warehouses peaked."),
+            ("Pre-position", f"inventory ahead of {quarter_label(peak_q)[:2]}: last {quarter_label(peak_q)[:2]} average "
+                             f"stockouts rose {peak_stock_jump:.1f} pts as warehouses peaked."),
         ],
         "closing": f"Protect the growth engine in {top}, fix the fundamentals in {bot}, "
                    f"and review progress at the {nxt} QBR.",
     }
-    return out
 
 
-# --------------------------------------------------------------------------- Gemini engine
-PROMPT = """You are a senior strategy consultant writing a 5-slide executive QBR deck for NovaRetail.
-Use ONLY the numbers in the JSON below. Interpret, don't just describe. Return ONLY valid JSON with keys:
-"summary" (3-4 sentences, <=480 chars: overall performance, standout region, biggest risk),
-"s2_headline","s3_headline","s4_headline" (insight-led, <=80 chars each),
-"s2_bullets","s3_bullets","s4_bullets" (exactly 4 strings each, <=140 chars, include numbers),
-"actions" (exactly 4 objects {{"verb": one bold action verb, "text": <=130 chars tied to an insight}}),
-"closing" (one line, <=110 chars).
-Slide 2 = revenue/units/returns/marketing. Slide 3 = NPS/CSAT/delivery/tickets. Slide 4 = stockouts/warehouse/returns processing/fraud.
-DATA:
-{data}
-"""
+# --------------------------------------------------------------------------- editable JSON artifact
+def to_json(story: dict, m: Metrics | None = None, source: str = "rules") -> dict:
+    """Internal story -> editable, human-readable narrative.json."""
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "quarter": quarter_label(m.latest_q) if m else None,
+        "source": source,
+        "subtitle": story["subtitle"],
+        "kpis": [{"value": v, "label": lab, "value_locked": True} for v, lab in story["kpis"]],
+        "summary": story["summary"],
+        **{f"slide_{n}": {"headline": story[n]["headline"], "bullets": list(story[n]["bullets"])} for n in (2, 3, 4)},
+        "actions": [{"verb": v, "text": t} for v, t in story["actions"]],
+        "closing": story["closing"],
+    }
 
 
-def gemini(m: Metrics, model: str) -> dict:
-    base = rule_based(m)
-    try:
-        from google import genai
-        client = genai.Client()  # uses GOOGLE_API_KEY, or Vertex AI via GOOGLE_GENAI_USE_VERTEXAI + ADC
-        resp = client.models.generate_content(
-            model=model,
-            contents=PROMPT.format(data=json.dumps(metrics_for_llm(m), default=str)),
-            config={"response_mime_type": "application/json", "temperature": 0.3},
-        )
-        ai = json.loads(resp.text)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[warn] Gemini unavailable ({exc}); using rule-based narrative.")
-        return base
+def from_json(data: dict, m: Metrics) -> dict:
+    """Editable narrative.json -> internal story used by deck_builder.
 
-    def ok(s, n): return isinstance(s, str) and 0 < len(s) <= n
-    if ok(ai.get("summary"), 520): base["summary"] = ai["summary"]
+    KPI values are re-derived from the data (locked); only the labels come from the JSON.
+    Empty bullets / actions are dropped so a user can delete one by clearing it.
+    """
+    locked = kpi_values(m)
+    labels = [k.get("label", "") for k in data.get("kpis", [])]
+    story = {
+        "subtitle": data["subtitle"].strip(),
+        "kpis": [(v, (labels[i].strip() if i < len(labels) and labels[i].strip() else lab))
+                 for i, (v, lab) in enumerate(locked)],
+        "summary": data["summary"].strip(),
+        "actions": [(a["verb"].strip(), a["text"].strip()) for a in data["actions"]
+                    if a.get("verb", "").strip() and a.get("text", "").strip()],
+        "closing": data["closing"].strip(),
+    }
     for n in (2, 3, 4):
-        if ok(ai.get(f"s{n}_headline"), 90): base[n]["headline"] = ai[f"s{n}_headline"]
-        b = ai.get(f"s{n}_bullets")
-        if isinstance(b, list) and 3 <= len(b) <= 4 and all(ok(x, 160) for x in b): base[n]["bullets"] = b
-    a = ai.get("actions")
-    if isinstance(a, list) and 3 <= len(a) <= 4 and all(ok(x.get("verb"), 20) and ok(x.get("text"), 150) for x in a):
-        base["actions"] = [(x["verb"], x["text"]) for x in a]
-    if ok(ai.get("closing"), 120): base["closing"] = ai["closing"]
-    print("[info] Narrative generated with Gemini (validated).")
-    return base
+        s = data[f"slide_{n}"]
+        story[n] = {"headline": s["headline"].strip(), "bullets": [b.strip() for b in s["bullets"] if b.strip()]}
+    return story
 
 
-def build_narrative(m: Metrics, engine: str = "rules", model: str = "gemini-2.5-flash") -> dict:
-    return gemini(m, model) if engine == "gemini" else rule_based(m)
+def build_narrative(m: Metrics) -> dict:
+    return rule_based(m)

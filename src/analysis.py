@@ -40,7 +40,8 @@ def quarter_label(q: str, short: bool = False) -> str:
     return f"{qq} '{year[2:]}" if short else f"{qq} {year}"
 
 
-def load_and_analyse(xlsx: str | Path) -> Metrics:
+def load_and_analyse(xlsx) -> Metrics:
+    """xlsx can be a path or a file-like object (e.g. a Streamlit upload)."""
     book = pd.read_excel(xlsx, sheet_name=None)
     missing = [s for s in SHEETS if s not in book]
     if missing:
@@ -105,15 +106,20 @@ def load_and_analyse(xlsx: str | Path) -> Metrics:
 
 
 def metrics_for_llm(m: Metrics) -> dict:
-    """Compact, JSON-serialisable view of the data for prompting an LLM."""
-    out = {"latest_quarter": m.latest_q, "first_quarter": m.first_q, "kpis": m.kpis, "regions": {}}
+    """Compact, JSON-serialisable view of the data for the AI agent."""
+    out = {"latest_quarter": m.latest_q, "first_quarter": m.first_q, "quarters": m.quarters,
+           "kpis": {k: round(v, 2) for k, v in m.kpis.items()}, "regions": {}}
     f = m.facts
     for r in m.regions:
         out["regions"][r] = {
             k: [round(float(v), 2) for v in f[k][r].tolist()]
             for k in ("rev", "units", "ret", "mkt", "nps", "csat", "deliv", "tick", "stock", "whu", "rproc", "fraud")
         }
-    out["quarters"] = m.quarters
+    out["metric_legend"] = {
+        "rev": "Revenue US$ M", "units": "Units sold (K)", "ret": "Returns rate %", "mkt": "Marketing spend US$ M",
+        "nps": "NPS", "csat": "CSAT %", "deliv": "Avg delivery days", "tick": "Support tickets (K)",
+        "stock": "Stockout rate %", "whu": "Warehouse capacity utilisation %", "rproc": "Return processing days",
+        "fraud": "Fraud incidents"}
     out["derived"] = {k: f[k] for k in ("top_growth_region", "bottom_growth_region", "largest_region",
                                         "best_nps_region", "worst_nps_region", "highest_risk_region",
                                         "highest_whu_region")}

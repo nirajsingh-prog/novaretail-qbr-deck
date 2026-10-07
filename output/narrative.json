@@ -1,18 +1,24 @@
 {
+  "schema_version": "2.0",
+  "quarter": "Q2 2026",
+  "source": "rules",
   "subtitle": "Q2 2026 Quarterly Business Review  |  Executive Readout",
   "kpis": [
-    [
-      "$1.28B",
-      "Total Revenue, Q2 2026"
-    ],
-    [
-      "+12.3%",
-      "Revenue Growth vs Q3 2025"
-    ],
-    [
-      "53",
-      "Blended NPS (revenue-weighted)"
-    ]
+    {
+      "value": "$1.28B",
+      "label": "Total Revenue, Q2 2026",
+      "value_locked": true
+    },
+    {
+      "value": "+12.3%",
+      "label": "Revenue Growth vs Q3 2025",
+      "value_locked": true
+    },
+    {
+      "value": "53",
+      "label": "Blended NPS (revenue-weighted)",
+      "value_locked": true
+    }
   ],
   "summary": "NovaRetail closed Q2 2026 at $1.28B in revenue, up 12.3% versus Q3 2025 and 4.5% quarter-on-quarter. APAC is the standout, growing revenue 27% while holding the highest NPS (62). Latin America is moving the other way: revenue is down 7%, NPS has fallen to 29 and stockouts have reached 12.5%. The biggest risk this quarter is fulfilment: APAC warehouses are running at 92% capacity just as demand there accelerates.",
   "slide_2": {
@@ -43,22 +49,22 @@
     ]
   },
   "actions": [
-    [
-      "Expand",
-      "APAC fulfilment capacity before peak season, targeting utilisation below 85% (now 92%) to protect +27% growth."
-    ],
-    [
-      "Launch",
-      "a Latin America recovery plan to cut delivery from 7.5 to under 5 days and returns processing from 10 days."
-    ],
-    [
-      "Tighten",
-      "fraud controls in Latin America, where incidents are up 67% to 30 per quarter."
-    ],
-    [
-      "Pre-position",
-      "inventory ahead of Q4: last Q4 average stockouts rose 1.2 pts as warehouses peaked."
-    ]
+    {
+      "verb": "Expand",
+      "text": "APAC fulfilment capacity before peak season, targeting utilisation below 85% (now 92%) to protect +27% growth."
+    },
+    {
+      "verb": "Launch",
+      "text": "a Latin America recovery plan to cut delivery from 7.5 to under 5 days and returns processing from 10 days."
+    },
+    {
+      "verb": "Tighten",
+      "text": "fraud controls in Latin America, where incidents are up 67% to 30 per quarter."
+    },
+    {
+      "verb": "Pre-position",
+      "text": "inventory ahead of Q4: last Q4 average stockouts rose 1.2 pts as warehouses peaked."
+    }
   ],
   "closing": "Protect the growth engine in APAC, fix the fundamentals in Latin America, and review progress at the Q3 2026 QBR."
 }

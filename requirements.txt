@@ -3,5 +3,9 @@ pandas>=2.0
 openpyxl>=3.1
 Pillow>=10.0
 lxml>=4.9
-# optional - only for --llm gemini
-google-genai>=1.0
+streamlit>=1.50
+google-adk>=1.0
+python-dotenv>=1.0
+pytest>=8.0
+# optional - only if you want sessions/preferences to survive app restarts (DECK_SESSION_DB)
+# aiosqlite>=0.20
